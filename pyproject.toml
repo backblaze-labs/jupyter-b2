@@ -1,0 +1,119 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "b2-jupyter"
+version = "0.1.0"
+description = "Jupyter/IPython magic commands and fsspec backend for Backblaze B2 Cloud Storage"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Backblaze", email = "opensource@backblaze.com" },
+]
+keywords = [
+    "backblaze",
+    "b2",
+    "cloud-storage",
+    "jupyter",
+    "ipython",
+    "magic",
+    "fsspec",
+    "data-science",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: IPython",
+    "Framework :: Jupyter",
+    "Framework :: Jupyter :: JupyterLab",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: System :: Filesystems",
+]
+dependencies = [
+    "b2sdk>=2.0.0",
+    "ipython>=7.0",
+    "tqdm>=4.0",
+    "tabulate>=0.9",
+]
+
+[project.optional-dependencies]
+fsspec = [
+    "fsspec>=2023.1.0",
+]
+pandas = [
+    "pandas>=1.5",
+    "pyarrow>=10.0",
+]
+all = [
+    "b2-jupyter[fsspec,pandas]",
+]
+dev = [
+    "b2-jupyter[all]",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.4",
+    "mypy>=1.8",
+    "pre-commit>=3.0",
+    "moto[s3]>=5.0",
+    "jupyter>=1.0",
+    "jupyterlab>=4.0",
+    "polars>=0.20",
+]
+
+[project.urls]
+Homepage = "https://github.com/backblaze-b2-samples/b2-jupyter"
+Repository = "https://github.com/backblaze-b2-samples/b2-jupyter"
+Documentation = "https://github.com/backblaze-b2-samples/b2-jupyter#readme"
+Issues = "https://github.com/backblaze-b2-samples/b2-jupyter/issues"
+
+[project.entry-points."fsspec.specs"]
+b2 = "b2_jupyter.fsspec_backend:B2FileSystem"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/b2_jupyter"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/b2_jupyter", "README.md", "LICENSE"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "TCH",  # flake8-type-checking
+    "D",    # pydocstyle
+]
+ignore = ["D100", "D104"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=b2_jupyter --cov-report=term-missing"
