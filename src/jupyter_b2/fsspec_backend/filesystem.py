@@ -12,20 +12,20 @@ from __future__ import annotations
 import io
 import os
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 try:
-    import fsspec
     from fsspec.spec import AbstractFileSystem
 
     HAS_FSSPEC = True
 except ImportError:
     HAS_FSSPEC = False
-    # Create a dummy base class so the module can be imported without fsspec
+
     class AbstractFileSystem:  # type: ignore[no-redef]
         """Placeholder when fsspec is not installed."""
 
         protocol = "b2"
+
 
 from b2sdk.v3 import B2Api, InMemoryAccountInfo
 
@@ -35,17 +35,18 @@ class B2FileSystem(AbstractFileSystem):
 
     Enables ``b2://bucket/path/to/file`` URIs across the Python ecosystem.
 
-    Parameters:
+    Parameters
+    ----------
         key_id: B2 application key ID. Defaults to ``B2_APPLICATION_KEY_ID`` env var.
         app_key: B2 application key. Defaults to ``B2_APPLICATION_KEY`` env var.
 
-    Examples::
-
+    Examples
+    --------
         # Direct usage
         fs = B2FileSystem(key_id="...", app_key="...")
         fs.ls("my-bucket/")
 
-        # Via pandas (after installing b2-jupyter[fsspec])
+        # Via pandas (after installing jupyter-b2[fsspec])
         import pandas as pd
         df = pd.read_csv("b2://my-bucket/data.csv")
     """
@@ -54,15 +55,15 @@ class B2FileSystem(AbstractFileSystem):
 
     def __init__(
         self,
-        key_id: Optional[str] = None,
-        app_key: Optional[str] = None,
+        key_id: str | None = None,
+        app_key: str | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the B2 filesystem."""
         if not HAS_FSSPEC:
             raise ImportError(
                 "fsspec is required for B2FileSystem. "
-                "Install with: pip install 'b2-jupyter[fsspec]'"
+                "Install with: pip install 'jupyter-b2[fsspec]'"
             )
         super().__init__(**kwargs)
 
@@ -98,17 +99,19 @@ class B2FileSystem(AbstractFileSystem):
     def ls(self, path: str, detail: bool = False, **kwargs: Any) -> list[Any]:
         """List objects under a path.
 
-        Args:
+        Parameters
+        ----------
             path: B2 path (e.g., "my-bucket/prefix/").
             detail: If True, return dicts with full metadata.
+            **kwargs: Additional arguments (ignored).
 
-        Returns:
+        Returns
+        -------
             List of paths (str) or metadata dicts.
         """
         bucket_name, prefix = self._split_path(path)
 
         if not bucket_name:
-            # List buckets
             buckets = self._api.list_buckets()
             if detail:
                 return [{"name": b.name, "type": "directory", "size": 0} for b in buckets]
@@ -119,19 +122,19 @@ class B2FileSystem(AbstractFileSystem):
             prefix += "/"
 
         results = []
-        for file_version, folder_name in bucket.ls(
-            folder_to_list=prefix, latest_only=True, recursive=False
-        ):
+        for file_version, _folder_name in bucket.ls(path=prefix, latest_only=True, recursive=False):
             full_path = f"{bucket_name}/{file_version.file_name}"
             if detail:
-                results.append({
-                    "name": full_path,
-                    "size": file_version.size or 0,
-                    "type": "directory" if file_version.file_name.endswith("/") else "file",
-                    "last_modified": datetime.fromtimestamp(
-                        (file_version.upload_timestamp or 0) / 1000, tz=timezone.utc
-                    ),
-                })
+                results.append(
+                    {
+                        "name": full_path,
+                        "size": file_version.size or 0,
+                        "type": "directory" if file_version.file_name.endswith("/") else "file",
+                        "last_modified": datetime.fromtimestamp(
+                            (file_version.upload_timestamp or 0) / 1000, tz=timezone.utc
+                        ),
+                    }
+                )
             else:
                 results.append(full_path)
 
@@ -165,11 +168,14 @@ class B2FileSystem(AbstractFileSystem):
     ) -> io.BytesIO:
         """Open a file for reading or writing.
 
-        Args:
+        Parameters
+        ----------
             path: B2 path.
             mode: File mode ("rb" for read, "wb" for write).
+            **kwargs: Additional arguments (ignored).
 
-        Returns:
+        Returns
+        -------
             BytesIO buffer.
         """
         bucket_name, key = self._split_path(path)
@@ -186,7 +192,13 @@ class B2FileSystem(AbstractFileSystem):
         else:
             raise ValueError(f"Unsupported mode: {mode}")
 
-    def cat_file(self, path: str, start: Optional[int] = None, end: Optional[int] = None, **kwargs: Any) -> bytes:
+    def cat_file(
+        self,
+        path: str,
+        start: int | None = None,
+        end: int | None = None,
+        **kwargs: Any,
+    ) -> bytes:
         """Read a file's contents as bytes."""
         bucket_name, key = self._split_path(path)
         bucket = self._get_bucket(bucket_name)
@@ -221,11 +233,11 @@ class B2FileSystem(AbstractFileSystem):
         except Exception:
             return False
 
-    def created(self, path: str) -> Optional[datetime]:
+    def created(self, path: str) -> datetime | None:
         """Get creation time (same as modified for B2)."""
         return self.modified(path)
 
-    def modified(self, path: str) -> Optional[datetime]:
+    def modified(self, path: str) -> datetime | None:
         """Get last modified time."""
         info = self.info(path)
         return info.get("last_modified")
