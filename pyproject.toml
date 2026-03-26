@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "b2-jupyter"
+name = "jupyter-b2"
 version = "0.1.0"
 description = "Jupyter/IPython magic commands and fsspec backend for Backblaze B2 Cloud Storage"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
-    { name = "Backblaze", email = "opensource@backblaze.com" },
+    { name = "Gonzalo Peña-Castellanos", email = "goanpeca@gmail.com" },
 ]
 keywords = [
     "backblaze",
@@ -31,7 +31,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -55,10 +54,10 @@ pandas = [
     "pyarrow>=10.0",
 ]
 all = [
-    "b2-jupyter[fsspec,pandas]",
+    "jupyter-b2[fsspec,pandas]",
 ]
 dev = [
-    "b2-jupyter[all]",
+    "jupyter-b2[all]",
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "pytest-asyncio>=0.21",
@@ -72,23 +71,23 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/backblaze-b2-samples/b2-jupyter"
-Repository = "https://github.com/backblaze-b2-samples/b2-jupyter"
-Documentation = "https://github.com/backblaze-b2-samples/b2-jupyter#readme"
-Issues = "https://github.com/backblaze-b2-samples/b2-jupyter/issues"
+Homepage = "https://github.com/goanpeca/jupyter-b2"
+Repository = "https://github.com/goanpeca/jupyter-b2"
+Documentation = "https://github.com/goanpeca/jupyter-b2#readme"
+Issues = "https://github.com/goanpeca/jupyter-b2/issues"
 
 [project.entry-points."fsspec.specs"]
-b2 = "b2_jupyter.fsspec_backend:B2FileSystem"
+b2 = "jupyter_b2.fsspec_backend:B2FileSystem"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/b2_jupyter"]
+packages = ["src/jupyter_b2"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/b2_jupyter", "README.md", "LICENSE"]
+include = ["src/jupyter_b2", "README.md", "LICENSE.txt"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -105,15 +104,18 @@ select = [
 ]
 ignore = ["D100", "D104"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D102", "D103"]
+
 [tool.ruff.lint.pydocstyle]
-convention = "google"
+convention = "numpy"
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --cov=b2_jupyter --cov-report=term-missing"
+addopts = "-v --cov=jupyter_b2 --cov-report=term-missing"

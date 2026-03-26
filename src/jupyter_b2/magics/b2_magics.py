@@ -2,7 +2,7 @@
 
 Usage::
 
-    %load_ext b2_jupyter
+    %load_ext jupyter_b2
 
     # Authenticate
     %b2 auth --key-id <id> --key <key>
@@ -42,13 +42,16 @@ import shlex
 import sys
 from getpass import getpass
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from IPython.core.magic import Magics, cell_magic, line_magic, magics_class
 from IPython.display import display
 
-from b2_jupyter.magics.auth import B2AuthManager
-from b2_jupyter.magics.display import (
+from jupyter_b2.magics.auth import B2AuthManager
+from jupyter_b2.magics.display import (
     display_auth_status,
     display_buckets,
     display_download_success,
@@ -56,7 +59,7 @@ from b2_jupyter.magics.display import (
     display_file_list,
     display_upload_success,
 )
-from b2_jupyter.magics.loaders import (
+from jupyter_b2.magics.loaders import (
     _parse_b2_path,
     load_as_bytes,
     load_as_json,
@@ -90,19 +93,20 @@ class B2Magics(Magics):
     # ─── Main dispatcher ───────────────────────────────────────────────
 
     @line_magic
-    def b2(self, line: str) -> Optional[Any]:
+    def b2(self, line: str) -> Any | None:
         """Dispatch B2 sub-commands.
 
         Usage: ``%b2 <subcommand> [args...]``
         """
         args = _parse_args(line)
         if not args:
-            return self._print_help()
+            self._print_help()
+            return None
 
         subcommand = args[0]
         rest = " ".join(args[1:])
 
-        dispatch = {
+        dispatch: dict[str, Callable[..., Any]] = {
             "auth": self._cmd_auth,
             "buckets": self._cmd_buckets,
             "ls": self._cmd_ls,
@@ -222,7 +226,7 @@ class B2Magics(Magics):
         # Evaluate the cell to get the variable
         cell = cell.strip()
         try:
-            obj = self.shell.ev(cell)  # type: ignore[union-attr]
+            obj = self.shell.ev(cell)  # type: ignore[attr-defined]
         except Exception:
             # If eval fails, treat cell content as raw text
             obj = cell
@@ -236,7 +240,8 @@ class B2Magics(Magics):
         print(f"Saving to b2://{bucket_name}/{file_key} ...", end=" ", flush=True)
         file_version = bucket.upload_bytes(data, file_key)
         print("✅")
-        display_upload_success("(in-memory)", f"{bucket_name}/{file_key}", len(data), file_version.id_)
+        b2_path = f"{bucket_name}/{file_key}"
+        display_upload_success("(in-memory)", b2_path, len(data), file_version.id_)
 
     # ─── Sub-command implementations ───────────────────────────────────
 
@@ -247,15 +252,17 @@ class B2Magics(Magics):
         key_id = None
         app_key = None
 
+        # Parse --key-id BEFORE --key to avoid prefix match
         if "--key-id" in args:
             idx = args.index("--key-id")
             if idx + 1 < len(args):
                 key_id = args[idx + 1]
 
-        if "--key" in args:
-            idx = args.index("--key")
-            if idx + 1 < len(args):
-                app_key = args[idx + 1]
+        # Find --key that is NOT --key-id
+        for i, arg in enumerate(args):
+            if arg == "--key" and i + 1 < len(args):
+                app_key = args[i + 1]
+                break
 
         # Interactive mode if no key provided
         if not key_id and not app_key:
@@ -317,17 +324,19 @@ class B2Magics(Magics):
 
         files = []
         for file_version, _folder in bucket.ls(
-            folder_to_list=prefix,
+            path=prefix,
             latest_only=True,
             recursive=recursive,
         ):
-            files.append({
-                "name": file_version.file_name,
-                "size": file_version.size,
-                "uploadTimestamp": file_version.upload_timestamp,
-                "fileId": file_version.id_,
-                "contentType": file_version.content_type,
-            })
+            files.append(
+                {
+                    "name": file_version.file_name,
+                    "size": file_version.size,
+                    "uploadTimestamp": file_version.upload_timestamp,
+                    "fileId": file_version.id_,
+                    "contentType": file_version.content_type,
+                }
+            )
 
         display_file_list(files, bucket_name, prefix)
 
@@ -343,15 +352,17 @@ class B2Magics(Magics):
         bucket = api.get_bucket_by_name(bucket_name)
         file_version = bucket.get_file_info_by_name(file_key)
 
-        display_file_info({
-            "fileName": file_version.file_name,
-            "size": file_version.size,
-            "contentType": file_version.content_type,
-            "uploadTimestamp": file_version.upload_timestamp,
-            "fileId": file_version.id_,
-            "contentSha1": file_version.content_sha1,
-            "action": file_version.action,
-        })
+        display_file_info(
+            {
+                "fileName": file_version.file_name,
+                "size": file_version.size,
+                "contentType": file_version.content_type,
+                "uploadTimestamp": file_version.upload_timestamp,
+                "fileId": file_version.id_,
+                "contentSha1": file_version.content_sha1,
+                "action": file_version.action,
+            }
+        )
 
     def _cmd_upload(self, line: str) -> None:
         """Upload a local file to B2."""
@@ -460,13 +471,15 @@ class B2Magics(Magics):
         base_url = api.account_info.get_download_url()
         url = f"{base_url}/file/{bucket_name}/{file_key}?Authorization={auth_token}"
 
-        from IPython.display import HTML, display
+        from IPython.display import HTML
 
-        display(HTML(
-            f'<div style="margin: 8px 0; font-size: 13px;">'
-            f'<strong>🔗 Pre-signed URL</strong> (expires in {expires}s)<br>'
-            f'<code style="word-break: break-all;">{url}</code></div>'
-        ))
+        display(
+            HTML(
+                f'<div style="margin: 8px 0; font-size: 13px;">'
+                f"<strong>🔗 Pre-signed URL</strong> (expires in {expires}s)<br>"
+                f'<code style="word-break: break-all;">{url}</code></div>'
+            )
+        )
 
     def _print_help(self) -> None:
         """Print help message."""

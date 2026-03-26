@@ -5,10 +5,10 @@ from __future__ import annotations
 import io
 import json
 from pathlib import PurePosixPath
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
-from b2sdk.v3 import B2Api
-
+if TYPE_CHECKING:
+    from b2sdk.v3 import B2Api
 
 # Supported formats and their pandas read functions
 _PANDAS_READERS: dict[str, str] = {
@@ -41,7 +41,8 @@ def _parse_b2_path(path: str) -> tuple[str, str]:
         - ``b2://bucket/path/to/file.csv``
         - ``bucket/path/to/file.csv``
 
-    Returns:
+    Returns
+    -------
         Tuple of (bucket_name, file_key).
     """
     if path.startswith("b2://"):
@@ -60,12 +61,14 @@ def _detect_format(file_key: str) -> str:
 def download_to_buffer(api: B2Api, bucket_name: str, file_key: str) -> io.BytesIO:
     """Download a B2 file into an in-memory buffer.
 
-    Args:
+    Parameters
+    ----------
         api: Authenticated B2Api instance.
         bucket_name: Name of the bucket.
         file_key: File key/path within the bucket.
 
-    Returns:
+    Returns
+    -------
         BytesIO buffer containing the file data.
     """
     bucket = api.get_bucket_by_name(bucket_name)
@@ -81,39 +84,41 @@ def load_as_pandas(
     bucket_name: str,
     file_key: str,
     *,
-    format_hint: Optional[str] = None,
+    format_hint: str | None = None,
     **kwargs: Any,
 ) -> Any:
     """Load a B2 file directly into a pandas DataFrame.
 
-    Args:
+    Parameters
+    ----------
         api: Authenticated B2Api instance.
         bucket_name: Bucket name.
         file_key: File path in the bucket.
         format_hint: Override auto-detected format (e.g., ".csv", ".parquet").
         **kwargs: Additional arguments passed to the pandas read function.
 
-    Returns:
+    Returns
+    -------
         pandas DataFrame.
 
-    Raises:
+    Raises
+    ------
         ImportError: If pandas is not installed.
         ValueError: If the file format is not supported.
     """
     try:
         import pandas as pd
-    except ImportError:
+    except ImportError as err:
         raise ImportError(
             "pandas is required for %b2_load --as df. "
-            "Install with: pip install 'b2-jupyter[pandas]'"
-        )
+            "Install with: pip install 'jupyter-b2[pandas]'"
+        ) from err
 
     ext = format_hint or _detect_format(file_key)
     reader_name = _PANDAS_READERS.get(ext)
     if reader_name is None:
         raise ValueError(
-            f"Unsupported format '{ext}' for pandas. "
-            f"Supported: {', '.join(_PANDAS_READERS.keys())}"
+            f"Unsupported format '{ext}' for pandas. Supported: {', '.join(_PANDAS_READERS.keys())}"
         )
 
     buffer = download_to_buffer(api, bucket_name, file_key)
@@ -134,35 +139,35 @@ def load_as_polars(
     bucket_name: str,
     file_key: str,
     *,
-    format_hint: Optional[str] = None,
+    format_hint: str | None = None,
     **kwargs: Any,
 ) -> Any:
     """Load a B2 file directly into a Polars DataFrame.
 
-    Args:
+    Parameters
+    ----------
         api: Authenticated B2Api instance.
         bucket_name: Bucket name.
         file_key: File path in the bucket.
         format_hint: Override auto-detected format.
         **kwargs: Additional arguments passed to the Polars read function.
 
-    Returns:
+    Returns
+    -------
         polars DataFrame.
     """
     try:
         import polars as pl
-    except ImportError:
+    except ImportError as err:
         raise ImportError(
-            "polars is required for %b2_load --as polars. "
-            "Install with: pip install polars"
-        )
+            "polars is required for %b2_load --as polars. Install with: pip install polars"
+        ) from err
 
     ext = format_hint or _detect_format(file_key)
     reader_name = _POLARS_READERS.get(ext)
     if reader_name is None:
         raise ValueError(
-            f"Unsupported format '{ext}' for polars. "
-            f"Supported: {', '.join(_POLARS_READERS.keys())}"
+            f"Unsupported format '{ext}' for polars. Supported: {', '.join(_POLARS_READERS.keys())}"
         )
 
     buffer = download_to_buffer(api, bucket_name, file_key)
@@ -180,9 +185,7 @@ def load_as_bytes(api: B2Api, bucket_name: str, file_key: str) -> bytes:
     return buffer.read()
 
 
-def load_as_text(
-    api: B2Api, bucket_name: str, file_key: str, encoding: str = "utf-8"
-) -> str:
+def load_as_text(api: B2Api, bucket_name: str, file_key: str, encoding: str = "utf-8") -> str:
     """Load a B2 file as a text string."""
     raw = load_as_bytes(api, bucket_name, file_key)
     return raw.decode(encoding)

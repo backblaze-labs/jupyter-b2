@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from b2_jupyter.fsspec_backend.filesystem import B2FileSystem
+from jupyter_b2.fsspec_backend.filesystem import B2FileSystem
 
 
 class TestSplitPath:
@@ -41,7 +41,7 @@ class TestB2FileSystemInit:
 
     def test_missing_fsspec_import(self, monkeypatch):
         """Test error message when fsspec is not installed."""
-        import b2_jupyter.fsspec_backend.filesystem as mod
+        import jupyter_b2.fsspec_backend.filesystem as mod
 
         monkeypatch.setattr(mod, "HAS_FSSPEC", False)
         with pytest.raises(ImportError, match="fsspec is required"):

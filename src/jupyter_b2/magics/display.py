@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 from IPython.display import HTML, display
 
@@ -17,7 +20,7 @@ def _human_size(size_bytes: int) -> str:
     return f"{size_bytes:.1f} EB"
 
 
-def _format_timestamp(ms: Optional[int]) -> str:
+def _format_timestamp(ms: int | None) -> str:
     """Convert B2 millisecond timestamp to readable string."""
     if ms is None:
         return "—"
@@ -28,7 +31,8 @@ def _format_timestamp(ms: Optional[int]) -> str:
 def display_file_list(files: Sequence[dict[str, Any]], bucket_name: str, prefix: str) -> None:
     """Display a list of files as a rich HTML table.
 
-    Args:
+    Parameters
+    ----------
         files: List of file info dicts from B2 listing.
         bucket_name: Name of the bucket.
         prefix: Current path prefix.
@@ -81,9 +85,7 @@ def display_buckets(buckets: Sequence[dict[str, Any]]) -> None:
         name = b.get("name", "")
         bucket_type = b.get("type", "")
         icon = "🔒" if bucket_type == "allPrivate" else "🌐"
-        rows.append(
-            f"<tr><td>{icon} <code>{name}</code></td><td>{bucket_type}</td></tr>"
-        )
+        rows.append(f"<tr><td>{icon} <code>{name}</code></td><td>{bucket_type}</td></tr>")
 
     html = f"""
     <div style="margin: 8px 0;">
@@ -114,17 +116,17 @@ def display_file_info(info: dict[str, Any]) -> None:
         </div>
         <table style="width: 100%;">
             <tr><td style="color: #666; padding: 3px 0;">Size</td>
-                <td>{_human_size(info.get('size', 0))}</td></tr>
+                <td>{_human_size(info.get("size", 0))}</td></tr>
             <tr><td style="color: #666; padding: 3px 0;">Content Type</td>
-                <td>{info.get('contentType', '—')}</td></tr>
+                <td>{info.get("contentType", "—")}</td></tr>
             <tr><td style="color: #666; padding: 3px 0;">Upload Date</td>
-                <td>{_format_timestamp(info.get('uploadTimestamp'))}</td></tr>
+                <td>{_format_timestamp(info.get("uploadTimestamp"))}</td></tr>
             <tr><td style="color: #666; padding: 3px 0;">File ID</td>
-                <td><code style="font-size: 11px;">{info.get('fileId', '—')}</code></td></tr>
+                <td><code style="font-size: 11px;">{info.get("fileId", "—")}</code></td></tr>
             <tr><td style="color: #666; padding: 3px 0;">SHA1</td>
-                <td><code style="font-size: 11px;">{info.get('contentSha1', '—')}</code></td></tr>
+                <td><code style="font-size: 11px;">{info.get("contentSha1", "—")}</code></td></tr>
             <tr><td style="color: #666; padding: 3px 0;">Action</td>
-                <td>{info.get('action', '—')}</td></tr>
+                <td>{info.get("action", "—")}</td></tr>
         </table>
     </div>
     """
@@ -149,7 +151,7 @@ def display_auth_status(
                 <tr><td style="color: #666; padding: 2px 8px 2px 0;">API URL</td>
                     <td><code>{api_url}</code></td></tr>
                 <tr><td style="color: #666; padding: 2px 8px 2px 0;">Bucket</td>
-                    <td>{allowed_bucket or 'All buckets'}</td></tr>
+                    <td>{allowed_bucket or "All buckets"}</td></tr>
             </table>
         </div>
         """

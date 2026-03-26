@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from b2_jupyter.magics.loaders import _detect_format, _parse_b2_path
+from jupyter_b2.magics.loaders import _detect_format, _parse_b2_path
 
 
 class TestParseB2Path:

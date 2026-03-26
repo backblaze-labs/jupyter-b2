@@ -6,7 +6,7 @@ library that uses fsspec for filesystem abstraction.
 
 Usage::
 
-    import b2_jupyter  # registers b2:// protocol
+    import jupyter_b2  # registers b2:// protocol
 
     import pandas as pd
     df = pd.read_csv("b2://my-bucket/data/train.csv")
@@ -23,6 +23,6 @@ Configuration via environment variables::
 
 from __future__ import annotations
 
-from b2_jupyter.fsspec_backend.filesystem import B2FileSystem
+from jupyter_b2.fsspec_backend.filesystem import B2FileSystem
 
 __all__ = ["B2FileSystem"]

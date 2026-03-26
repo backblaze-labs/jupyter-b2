@@ -1,13 +1,13 @@
-# Contributing to b2-jupyter
+# Contributing to jupyter-b2
 
-Thank you for your interest in contributing to b2-jupyter!
+Thank you for your interest in contributing to jupyter-b2!
 
 ## Development Setup
 
 ```bash
 # Clone the repo
-git clone https://github.com/backblaze-b2-samples/b2-jupyter.git
-cd b2-jupyter
+git clone https://github.com/backblaze-b2-samples/jupyter-b2.git
+cd jupyter-b2
 
 # Create virtual environment
 python -m venv .venv
@@ -27,7 +27,7 @@ pre-commit install
 pytest tests/ -v
 
 # Run with coverage
-pytest tests/ -v --cov=b2_jupyter --cov-report=term-missing
+pytest tests/ -v --cov=jupyter_b2 --cov-report=term-missing
 
 # Run specific test file
 pytest tests/test_magics/test_loaders.py -v
@@ -50,13 +50,13 @@ ruff format src/ tests/
 ## Type Checking
 
 ```bash
-mypy src/b2_jupyter/ --ignore-missing-imports
+mypy src/jupyter_b2/ --ignore-missing-imports
 ```
 
 ## Project Structure
 
 ```
-src/b2_jupyter/
+src/jupyter_b2/
   __init__.py                    # Extension entry point (load_ipython_extension)
   magics/
     __init__.py
