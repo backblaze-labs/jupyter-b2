@@ -39,7 +39,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
       - run: pytest tests/ -v --cov=jupyter_b2 --cov-report=xml
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v7
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
         with:
           file: ./coverage.xml
